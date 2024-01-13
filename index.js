@@ -82,7 +82,7 @@ async function run() {
     });
 
     // is admin api
-    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    app.get("/users/admin/:email", verifyToken, verifyAdmin, async (req, res) => {
       const query = { email: req.params.email };
       const user = await userCollection.findOne(query);
       let admin = false;
@@ -99,7 +99,7 @@ async function run() {
       }
     });
 
-    app.patch("/users", async (req, res) => {
+    app.patch("/users", verifyToken, verifyAdmin, async (req, res) => {
       const userFilter = req.body;
       const options = { upsert: true };
       const name = req.body.name;
@@ -150,7 +150,7 @@ async function run() {
       res.send(result);
     })
 
-    app.delete("/doctors/:id", async (req, res) => {
+    app.delete("/doctors/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await doctorCollection.deleteOne(query);
@@ -167,7 +167,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/appointments/:id", async(req, res) => {
+    app.patch("/appointments/:id", verifyToken, async(req, res) => {
       const review = req.body;
       const id = req.params.id;
       const query = {_id: new ObjectId(id)};
@@ -180,7 +180,7 @@ async function run() {
       res.send(result)
     })
 
-    app.post("/appointments", async (req, res) => {
+    app.post("/appointments", verifyToken, async (req, res) => {
       const query = req.body;
       const result = await appointmentCollection.insertOne(query);
       res.send(result);
