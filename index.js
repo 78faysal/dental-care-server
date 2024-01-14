@@ -82,7 +82,7 @@ async function run() {
     });
 
     // is admin api
-    app.get("/users/admin/:email", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const query = { email: req.params.email };
       const user = await userCollection.findOne(query);
       let admin = false;
