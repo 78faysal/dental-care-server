@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
-const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -66,14 +66,14 @@ async function run() {
     const verifyAdmin = async (req, res, next) => {
       console.log(req.decoded);
       const email = req.decoded.email;
-      const query = {email: email};
+      const query = { email: email };
       const user = await userCollection.findOne(query);
-      const isAdmin = user?.role === 'admin';
-      if(!isAdmin){
-        return res.status(403).send({message: 'forbidden access'})
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
       }
       next();
-    }
+    };
 
     // users api
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
@@ -81,7 +81,7 @@ async function run() {
       res.send(result);
     });
 
-    // is admin api TODO: if need add verifyToken 
+    // is admin api TODO: if need add verifyToken
     app.get("/users/admin/:email", async (req, res) => {
       const query = { email: req.params.email };
       const user = await userCollection.findOne(query);
@@ -90,9 +90,8 @@ async function run() {
         admin = user?.role === "admin";
         if (admin) {
           return res.send({ admin });
-        }
-        else{
-          return res.send({admin: false})
+        } else {
+          return res.send({ admin: false });
         }
       } else {
         return res.send({ admin: false });
@@ -144,11 +143,11 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/doctors', verifyToken, verifyAdmin, async(req, res) => {
+    app.post("/doctors", verifyToken, verifyAdmin, async (req, res) => {
       const doctor = req.body;
       const result = await doctorCollection.insertOne(doctor);
       res.send(result);
-    })
+    });
 
     app.delete("/doctors/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
@@ -167,18 +166,20 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/appointments/:id", verifyToken, async(req, res) => {
-      const review = req.body;
+    app.patch("/appointments/:id", verifyToken, async (req, res) => {
+      const paymentInfo = req.body;
+      // console.log(paymentInfo);
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
-          review: review
-        }
-      }
+          transactionId: paymentInfo.transId,
+          payment: 'done'
+        },
+      };
       const result = await appointmentCollection.updateOne(query, updatedDoc);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     app.post("/appointments", verifyToken, async (req, res) => {
       const query = req.body;
@@ -186,34 +187,33 @@ async function run() {
       res.send(result);
     });
 
-    // generate client secret for stripe payment 
-    app.post('/create-payment-intent', verifyToken, async(req, res) => {
-      const {price} = req.body;
+    // generate client secret for stripe payment
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
       const amount = parseInt(price * 100);
-      if(!price || amount < 1){
+      if (!price || amount < 1) {
         return;
       }
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['card']
-      })
-      res.send({clientSecret: paymentIntent.client_secret})
-    })
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
 
-    // save payment info in the paymentCollection 
-    app.post('/payments', verifyToken, async(req, res) => {
+    // save payment info in the paymentCollection
+    app.post("/payments", verifyToken, async (req, res) => {
       const payment = req.body;
       const existingPayment = await paymentCollection.findOne({
         transactionId: payment.transactionId,
-      })
-      if(existingPayment){
-        res.send({message: 'Payment already exists'})
+      });
+      if (existingPayment) {
+        res.send({ message: "Payment already exists" });
       }
       const result = await paymentCollection.insertOne(payment);
       res.send(result);
-    })
-
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
