@@ -81,8 +81,8 @@ async function run() {
       res.send(result);
     });
 
-    // is admin api
-    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    // is admin api TODO: if need add verifyToken 
+    app.get("/users/admin/:email", async (req, res) => {
       const query = { email: req.params.email };
       const user = await userCollection.findOne(query);
       let admin = false;
@@ -95,11 +95,11 @@ async function run() {
           return res.send({admin: false})
         }
       } else {
-        return res.status(401).send({ message: "unauthorized access" });
+        return res.send({ admin: false });
       }
     });
 
-    app.patch("/users", verifyToken, verifyAdmin, async (req, res) => {
+    app.patch("/users", async (req, res) => {
       const userFilter = req.body;
       const options = { upsert: true };
       const name = req.body.name;
